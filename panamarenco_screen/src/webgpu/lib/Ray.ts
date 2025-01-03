@@ -186,6 +186,7 @@ private _temp: Vector3 = new Vector3();
         }
 
         const t = -b - Math.sqrt(h);
+        console.log(t)
         if (t < 0) {
             return null;
         }

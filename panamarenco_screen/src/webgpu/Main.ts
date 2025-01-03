@@ -8,9 +8,11 @@ import Model from "./lib/model/Model.ts";
 import Box from "./lib/mesh/geometry/Box.ts";
 import CubeTextureLoader from "./lib/textures/CubeTextureLoader.ts";
 import CubeMaterial from "./CubeMaterial.ts";
-import Timer from "./lib/Timer.ts";
 import MouseListener from "./lib/MouseListener.ts";
 import PanoramaViewController from "./PanoramaViewController.ts";
+import Ray from "./lib/Ray.ts";
+import HotSpot from "./HotSpot.ts";
+import TextureLoader from "./lib/textures/TextureLoader.ts";
 
 export default class Main {
     private canvas: HTMLCanvasElement;
@@ -23,7 +25,10 @@ export default class Main {
     private cubeTexture!: CubeTextureLoader;
     private mouseListener!: MouseListener;
     private panormaViewController!: PanoramaViewController;
-
+    private ray = new Ray()
+    private hotSpot1!: HotSpot;
+    private hotSpot2!: HotSpot;
+    private infoTexture!: TextureLoader;
 
     constructor() {
 
@@ -46,16 +51,24 @@ export default class Main {
                 //onPreload
             }, this.init.bind(this)
         );
+
         this.preloader.startLoad()
+        this.infoTexture = new TextureLoader(this.renderer, "infoIcon.png")
+        this.infoTexture.onComplete = () => {
+            this.preloader.stopLoad()
+        }
 
+
+
+
+        this.preloader.startLoad()
         let textures: Array<string> = []
-           // [+X, -X, +Y, -Y, +Z, -Z]
-        let posArr =[2,4,0,5,1,3]
-
+        // [+X, -X, +Y, -Y, +Z, -Z]
+        let posArr = [2, 4, 0, 5, 1, 3]
 
         for (let i = 0; i < 6; i++) {
 
-            let s = "view1/512_face" +  posArr[i] + "_0_0.jpg"
+            let s = "view1/512_face" + posArr[i] + "_0_0.jpg"
             textures.push(s);
         }
         this.cubeTexture = new CubeTextureLoader(this.renderer, "test", textures)
@@ -72,11 +85,11 @@ export default class Main {
         this.camera = new Camera(this.renderer)
         this.camera.near = 0.1
         this.camera.far = 10
-        this.camera.fovy =1.5
+        this.camera.fovy = 1.5
         this.camera.cameraWorld.set(0, 0, 0)
         this.camera.cameraLookAt.set(1, 0, 0)
 
-        this.panormaViewController =new PanoramaViewController(this.camera,this.mouseListener)
+        this.panormaViewController = new PanoramaViewController(this.camera, this.mouseListener)
 
         this.canvasRenderPass = new CanvasRenderPass(this.renderer, this.camera)
         this.renderer.setCanvasColorAttachment(this.canvasRenderPass.canvasColorAttachment);
@@ -87,6 +100,13 @@ export default class Main {
         this.cubeModel.material = new CubeMaterial(this.renderer, "testMat")
         this.cubeModel.material.setTexture("myTexture", this.cubeTexture)
         this.canvasRenderPass.modelRenderer.addModel(this.cubeModel)
+
+        this.hotSpot1 = new HotSpot(this.renderer)
+        this.canvasRenderPass.modelRenderer.addModel(this.hotSpot1.model)
+
+        this.hotSpot2 = new HotSpot(this.renderer)
+        this.hotSpot2.position.set(-0.9757119771757714, 0.13768675001373945, 0.17037751162169576,1)
+        this.canvasRenderPass.modelRenderer.addModel(this.hotSpot2.model)
 
         this.tick();
     }
@@ -105,8 +125,17 @@ export default class Main {
     private update() {
         this.camera.ratio = this.renderer.ratio;
         this.panormaViewController.update()
-
+this.hotSpot1.update()
+        this.hotSpot2.update()
         this.camera.update();
+
+        if (this.mouseListener.isDownThisFrame) {
+
+            this.ray.setFromCamera(this.camera, this.mouseListener.getMouseNorm())
+
+            console.log(this.ray.rayDir)
+
+        }
 
 
         UI.pushWindow("test")
