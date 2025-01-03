@@ -1,0 +1,92 @@
+import RenderPass from "./lib/RenderPass.ts";
+import ColorAttachment from "./lib/textures/ColorAttachment.ts";
+import RenderTexture from "./lib/textures/RenderTexture.ts";
+import Renderer from "./lib/Renderer.ts";
+import {TextureFormat} from "./lib/WebGPUConstants.ts";
+import DepthStencilAttachment from "./lib/textures/DepthStencilAttachment.ts";
+
+
+import UI from "./lib/UI/UI.ts";
+import ModelRenderer from "./lib/model/ModelRenderer.ts";
+import Camera from "./lib/Camera.ts";
+
+
+
+
+export default class CanvasRenderPass extends RenderPass {
+    public canvasColorAttachment: ColorAttachment;
+
+
+
+    private readonly canvasColorTarget: RenderTexture;
+    private canvasDepthTarget: RenderTexture;
+    modelRenderer: ModelRenderer;
+
+    camera!:Camera
+
+
+
+
+    constructor(renderer: Renderer,camera3D:Camera) {
+
+        super(renderer, "canvasRenderPass");
+
+        this.sampleCount = 4
+
+
+        this.canvasColorTarget = new RenderTexture(renderer, "canvasColor", {
+            format: renderer.presentationFormat,
+            sampleCount: this.sampleCount,
+            scaleToCanvas: true,
+
+            usage: GPUTextureUsage.RENDER_ATTACHMENT
+        });
+
+        this.canvasColorAttachment = new ColorAttachment(this.canvasColorTarget, {
+            clearValue: {
+                r: 0.3,
+                g: 0.3,
+                b: 0.3,
+                a: 1
+            }
+        });
+
+
+
+
+
+
+        this.colorAttachments = [this.canvasColorAttachment];
+
+       this.canvasDepthTarget = new RenderTexture(renderer, "canvasDepth", {
+            format: TextureFormat.Depth16Unorm,
+            sampleCount: this.sampleCount,
+            scaleToCanvas: true,
+            usage: GPUTextureUsage.RENDER_ATTACHMENT
+        });
+        this.depthStencilAttachment = new DepthStencilAttachment(this.canvasDepthTarget);
+
+
+
+        this.modelRenderer = new ModelRenderer(this.renderer,"3DRenderer",camera3D)
+
+
+    }
+
+
+
+
+    draw() {
+
+
+
+            this.modelRenderer.draw(this);
+
+
+    UI.drawGPU(this.passEncoder, true)
+
+
+    }
+
+
+}
