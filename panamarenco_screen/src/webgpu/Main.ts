@@ -9,6 +9,8 @@ import Box from "./lib/mesh/geometry/Box.ts";
 import CubeTextureLoader from "./lib/textures/CubeTextureLoader.ts";
 import CubeMaterial from "./CubeMaterial.ts";
 import Timer from "./lib/Timer.ts";
+import MouseListener from "./lib/MouseListener.ts";
+import PanoramaViewController from "./PanoramaViewController.ts";
 
 export default class Main {
     private canvas: HTMLCanvasElement;
@@ -19,6 +21,8 @@ export default class Main {
     private canvasRenderPass!: CanvasRenderPass;
     private cubeModel!: Model;
     private cubeTexture!: CubeTextureLoader;
+    private mouseListener!: MouseListener;
+    private panormaViewController!: PanoramaViewController;
 
 
     constructor() {
@@ -63,12 +67,16 @@ export default class Main {
 
     init() {
 
+        this.mouseListener = new MouseListener(this.renderer)
+
         this.camera = new Camera(this.renderer)
         this.camera.near = 0.1
         this.camera.far = 10
         this.camera.fovy =1.5
         this.camera.cameraWorld.set(0, 0, 0)
         this.camera.cameraLookAt.set(1, 0, 0)
+
+        this.panormaViewController =new PanoramaViewController(this.camera,this.mouseListener)
 
         this.canvasRenderPass = new CanvasRenderPass(this.renderer, this.camera)
         this.renderer.setCanvasColorAttachment(this.canvasRenderPass.canvasColorAttachment);
@@ -84,21 +92,23 @@ export default class Main {
     }
 
     private tick() {
+
         this.update();
 
         UI.updateGPU();
+        this.mouseListener.reset();
         this.renderer.update(this.draw.bind(this));
         window.requestAnimationFrame(() => this.tick());
 
     }
 
     private update() {
-
-
         this.camera.ratio = this.renderer.ratio;
+        this.panormaViewController.update()
+
         this.camera.update();
 
-        this.cubeModel.ry +=Timer.delta*0.2
+
         UI.pushWindow("test")
 
         UI.popWindow()

@@ -145,6 +145,7 @@ export default class MouseListener {
     mouseDown() {
         this.isDown = true;
         this.isDownThisFrame = true;
+
         this.mousePosDown = this.mousePos.clone();
         this.isDirty = 1;
     }
