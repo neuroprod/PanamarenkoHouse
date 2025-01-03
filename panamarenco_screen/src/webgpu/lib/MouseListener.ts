@@ -15,14 +15,14 @@ export default class MouseListener {
     public ctrlKey: boolean = false;
     public shiftKey: boolean = false;
     public metaKey: boolean = false;
-    private element: Document;
+    private element: HTMLCanvasElement;
     private preventDefault = false;
     private renderer: Renderer;
     pressure:number =0;
 
-    constructor(renderer: Renderer) {
+    constructor(renderer: Renderer,canvas:HTMLCanvasElement) {
         this.renderer = renderer;
-        this.element = document;
+        this.element = canvas;
 
         this.element.addEventListener(
             "pointermove",

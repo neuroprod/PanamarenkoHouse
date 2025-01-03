@@ -1,4 +1,3 @@
-import CanvasManager from "./lib/CanvasManager.ts";
 import Renderer from "./lib/Renderer.ts";
 import PreLoader from "./lib/PreLoader.ts";
 import Camera from "./lib/Camera.ts";
@@ -13,39 +12,59 @@ import PanoramaViewController from "./PanoramaViewController.ts";
 import Ray from "./lib/Ray.ts";
 import HotSpot from "./HotSpot.ts";
 import TextureLoader from "./lib/textures/TextureLoader.ts";
+import Hub from "./Hub.ts";
 
 export default class Main {
-    private canvas: HTMLCanvasElement;
-    private canvasManager: CanvasManager;
+    private canvas1: HTMLCanvasElement;
+    private canvas2: HTMLCanvasElement;
     private renderer: Renderer;
     private preloader!: PreLoader;
-    private camera!: Camera;
-    private canvasRenderPass!: CanvasRenderPass;
+
+
     private cubeModel!: Model;
     private cubeTexture!: CubeTextureLoader;
-    private mouseListener!: MouseListener;
-    private panormaViewController!: PanoramaViewController;
-    private ray = new Ray()
+
+
     private hotSpot1!: HotSpot;
     private hotSpot2!: HotSpot;
     private infoTexture!: TextureLoader;
+    private hub1!: Hub;
+    private content: HTMLDivElement;
+    private hub2!: Hub;
 
     constructor() {
 
-        this.canvas = document.getElementById("webGPUCanvas") as HTMLCanvasElement;
-        this.canvasManager = new CanvasManager(this.canvas);
+        this.canvas1 = document.getElementById("webGPUCanvas1") as HTMLCanvasElement;
+        this.canvas2 = document.getElementById("webGPUCanvas2") as HTMLCanvasElement;
+        this.content = document.getElementById("content") as HTMLDivElement;
+        this.onResize()
         this.renderer = new Renderer();
-        this.renderer.setup(this.canvas).then(() => {
+        this.renderer.setup(this.canvas1,this.canvas2).then(() => {
             this.preload()
         })
 
+        window.onresize = this.onResize.bind(this)
+
+    }
+
+    onResize() {
+        let pixelRatio = window.devicePixelRatio
+        this.canvas1.style.width = Math.floor(window.innerWidth / 3) + "px";
+        this.canvas1.style.height = Math.floor(window.innerHeight) + "px";
+        this.canvas1.width = Math.floor(window.innerWidth / 3 * pixelRatio);
+        this.canvas1.height = Math.floor(window.innerHeight * pixelRatio);
+        this.canvas1.style.left = Math.floor(window.innerWidth / 3) + "px"
+
+        this.canvas2.style.width = Math.floor(window.innerWidth / 3) + "px";
+        this.canvas2.style.height = Math.floor(window.innerHeight) + "px";
+        this.canvas2.width = Math.floor(window.innerWidth / 3 * pixelRatio);
+        this.canvas2.height = Math.floor(window.innerHeight * pixelRatio);
+       this.canvas2.style.left = Math.floor((window.innerWidth / 3 * 2)) + "px"
 
     }
 
     preload() {
 
-        UI.setWebGPU(this.renderer)
-        UI.setSize(this.canvas.width, this.canvas.height)
 
         this.preloader = new PreLoader((n) => {
                 //onPreload
@@ -57,8 +76,6 @@ export default class Main {
         this.infoTexture.onComplete = () => {
             this.preloader.stopLoad()
         }
-
-
 
 
         this.preloader.startLoad()
@@ -80,33 +97,26 @@ export default class Main {
 
     init() {
 
-        this.mouseListener = new MouseListener(this.renderer)
-
-        this.camera = new Camera(this.renderer)
-        this.camera.near = 0.1
-        this.camera.far = 10
-        this.camera.fovy = 1.5
-        this.camera.cameraWorld.set(0, 0, 0)
-        this.camera.cameraLookAt.set(1, 0, 0)
-
-        this.panormaViewController = new PanoramaViewController(this.camera, this.mouseListener)
-
-        this.canvasRenderPass = new CanvasRenderPass(this.renderer, this.camera)
-        this.renderer.setCanvasColorAttachment(this.canvasRenderPass.canvasColorAttachment);
+       this.hub1 = new Hub(this.renderer,this.canvas1)
+        this.hub2 = new Hub(this.renderer,this.canvas2)
+        this.renderer.setCanvasColorAttachment1(this.hub1.canvasRenderPass.canvasColorAttachment);
+        this.renderer.setCanvasColorAttachment2(this.hub2.canvasRenderPass.canvasColorAttachment);
 
 
         this.cubeModel = new Model(this.renderer, "cubeModel")
         this.cubeModel.mesh = new Box(this.renderer)
         this.cubeModel.material = new CubeMaterial(this.renderer, "testMat")
         this.cubeModel.material.setTexture("myTexture", this.cubeTexture)
-        this.canvasRenderPass.modelRenderer.addModel(this.cubeModel)
-
+        this.hub1.canvasRenderPass.modelRenderer.addModel(this.cubeModel)
+        this.hub2.canvasRenderPass.modelRenderer.addModel(this.cubeModel)
         this.hotSpot1 = new HotSpot(this.renderer)
-        this.canvasRenderPass.modelRenderer.addModel(this.hotSpot1.model)
+        this.hub1.canvasRenderPass.modelRenderer.addModel(this.hotSpot1.model)
+        this.hub2.canvasRenderPass.modelRenderer.addModel(this.hotSpot1.model)
 
         this.hotSpot2 = new HotSpot(this.renderer)
-        this.hotSpot2.position.set(-0.9757119771757714, 0.13768675001373945, 0.17037751162169576,1)
-        this.canvasRenderPass.modelRenderer.addModel(this.hotSpot2.model)
+        this.hotSpot2.position.set(-0.9757119771757714, 0.13768675001373945, 0.17037751162169576, 1)
+        this.hub1.canvasRenderPass.modelRenderer.addModel(this.hotSpot2.model)
+        this.hub2.canvasRenderPass.modelRenderer.addModel(this.hotSpot2.model)
 
         this.tick();
     }
@@ -115,39 +125,28 @@ export default class Main {
 
         this.update();
 
-        UI.updateGPU();
-        this.mouseListener.reset();
+
         this.renderer.update(this.draw.bind(this));
         window.requestAnimationFrame(() => this.tick());
 
     }
 
     private update() {
-        this.camera.ratio = this.renderer.ratio;
-        this.panormaViewController.update()
-this.hotSpot1.update()
+        this.hub1.update()
+        this.hub2.update()
+        this.hotSpot1.update()
         this.hotSpot2.update()
-        this.camera.update();
-
-        if (this.mouseListener.isDownThisFrame) {
-
-            this.ray.setFromCamera(this.camera, this.mouseListener.getMouseNorm())
-
-            console.log(this.ray.rayDir)
-
-        }
 
 
-        UI.pushWindow("test")
 
-        UI.popWindow()
+
     }
 
     private draw() {
 
 
-        this.canvasRenderPass.add();
-
+        this.hub1.canvasRenderPass.add();
+        this.hub2.canvasRenderPass.add();
     }
 
 

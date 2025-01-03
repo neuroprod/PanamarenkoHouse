@@ -4,9 +4,9 @@ import Main from "./webgpu/Main.ts";
 
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-
-  <canvas id="webGPUCanvas"></canvas>
-
+<div id ="content">Content</div>
+  <canvas id="webGPUCanvas1"></canvas>
+  <canvas id="webGPUCanvas2"></canvas>
 `
 
 // @ts-ignore

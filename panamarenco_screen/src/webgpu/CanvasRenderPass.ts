@@ -83,7 +83,6 @@ export default class CanvasRenderPass extends RenderPass {
             this.modelRenderer.draw(this);
 
 
-    UI.drawGPU(this.passEncoder, true)
 
 
     }

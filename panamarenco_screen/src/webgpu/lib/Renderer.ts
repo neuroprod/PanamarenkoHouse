@@ -17,7 +17,8 @@ export default class Renderer {
     public width: number = 1;
     public height: number = 1;
     public inverseSizePixelRatio = new Vector2()
-    canvas!: HTMLCanvasElement;
+    canvas1!: HTMLCanvasElement;
+    canvas2!: HTMLCanvasElement;
     public device!: GPUDevice;
     presentationFormat!: GPUTextureFormat;
     commandEncoder!: GPUCommandEncoder;
@@ -26,9 +27,13 @@ export default class Renderer {
     modelByLabel: { [label: string]: Model } = {};
     useTimeStampQuery: boolean = false
     timeStamps!: TimeStampQuery;
-    private context!: GPUCanvasContext;
-    private canvasTextureView!: GPUTexture;
-    private canvasColorAttachment!: ColorAttachment;
+    private context1!: GPUCanvasContext;
+    private context2!: GPUCanvasContext;
+    private canvasTextureView1!: GPUTexture;
+    private canvasColorAttachment1!: ColorAttachment;
+
+    private canvasTextureView2!: GPUTexture;
+    private canvasColorAttachment2!: ColorAttachment;
     private uniformGroups: Array<UniformGroup> = [];
     mipmapQueue!: MipMapQueue;
 
@@ -36,9 +41,9 @@ export default class Renderer {
 
     }
 
-    async setup(canvas: HTMLCanvasElement) {
-        this.canvas = canvas;
-      
+    async setup(canvas1: HTMLCanvasElement,canvas2: HTMLCanvasElement) {
+        this.canvas1 = canvas1;
+        this.canvas2 = canvas2;
         this.pixelRatio = window.devicePixelRatio;
         this.textureHandler = new TextureHandler();
         Renderer.instance = this;
@@ -56,16 +61,22 @@ export default class Renderer {
 
             this.device = await adapter.requestDevice({requiredFeatures: requiredFeatures});
             //  console.log(this.device)
-            this.context = this.canvas.getContext("webgpu") as GPUCanvasContext;
             this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-console.log(this.presentationFormat)
-            this.context.configure({
+
+            this.context1 = this.canvas1.getContext("webgpu") as GPUCanvasContext;
+            this.context1.configure({
                 device: this.device,
                 format: this.presentationFormat,
                 alphaMode: "premultiplied",
 
             });
+            this.context2 = this.canvas2.getContext("webgpu") as GPUCanvasContext;
+            this.context2.configure({
+                device: this.device,
+                format: this.presentationFormat,
+                alphaMode: "premultiplied",
 
+            });
 
         }
         this.timeStamps = new TimeStampQuery(this, 4)
@@ -88,9 +99,10 @@ console.log(this.presentationFormat)
       //  this.timeStamps.readback()
         //
         this.device.queue.onSubmittedWorkDone().then(() => {
-            this.canvasTextureView = this.context.getCurrentTexture();
-            this.canvasColorAttachment.setTarget(this.canvasTextureView.createView())
-
+            this.canvasTextureView1 = this.context1.getCurrentTexture();
+            this.canvasColorAttachment1.setTarget(this.canvasTextureView1.createView())
+            this.canvasTextureView2 = this.context2.getCurrentTexture();
+            this.canvasColorAttachment2.setTarget(this.canvasTextureView2.createView())
 
             this.commandEncoder = this.device.createCommandEncoder();
           this.mipmapQueue.processQue();
@@ -108,10 +120,12 @@ console.log(this.presentationFormat)
         this.uniformGroups.push(uniformGroup)
     }
 
-    public setCanvasColorAttachment(canvasColorAttachment: ColorAttachment) {
-        this.canvasColorAttachment = canvasColorAttachment
+    public setCanvasColorAttachment1(canvasColorAttachment: ColorAttachment) {
+        this.canvasColorAttachment1 = canvasColorAttachment
     }
-
+    public setCanvasColorAttachment2(canvasColorAttachment: ColorAttachment) {
+        this.canvasColorAttachment2 = canvasColorAttachment
+    }
     addModel(model: Model) {
         this.modelByLabel[model.label] = model;
         this.models.push(model);
@@ -130,9 +144,9 @@ console.log(this.presentationFormat)
 
     private updateSize() {
 
-        if (this.width != this.canvas.width || this.height != this.canvas.height) {
-            this.width = this.canvas.width;
-            this.height = this.canvas.height;
+        if (this.width != this.canvas1.width || this.height != this.canvas1.height) {
+            this.width = this.canvas1.width;
+            this.height = this.canvas1.height;
             this.ratio = this.width / this.height;
 
 
